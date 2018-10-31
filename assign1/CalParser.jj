@@ -215,13 +215,28 @@ void statement() : {}
 	| <SSKIP> <SEMIC>
 }
 
-//Expression > Fragment > Expression.
+//Left hand recursion: Expression > Fragment > Expression.
 void expression() : {}
 {
-	  fragment() binary_arith_op() fragment()
+	//fragment() binary_arith_op() fragment()
+	expression_beta() (binary_arith_op() expression_beta())*  
+}
+
+//Separate out original Expression
+void expression_beta() : {}
+{
+	//<LB> expression() <RB>
+	//| <IDENTIFIER> <LB> arg_list() <RB>
+	//| fragment()
+
+	//replace fragment
+	 (<MINUS>)? <IDENTIFIER>
+	| <NUMBER>
+	| <TRUE>
+	| <FALSE>
+	// remainder of original expression
 	| <LB> expression() <RB>
 	| <IDENTIFIER> <LB> arg_list() <RB>
-	| fragment()
 }
 
 void binary_arith_op() : {}
@@ -229,6 +244,7 @@ void binary_arith_op() : {}
 	<PLUS> | <MINUS>
 }
 
+//Replace fragment
 void fragment() : {}
 {
 	  <IDENTIFIER>
