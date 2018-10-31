@@ -17,7 +17,7 @@ public class CalParser {
 			System.out.println("CAL parser: Reading from input: ");
 			parser = new CalParser(System.in);
 		} else if (args.length == 1) {
-			System.out.println("CAL Parser: Reading from file " + args[0] + "...");
+			System.out.println("CAL Parser: Reading from file " + args[0] + "..");
 		
 		try {
 			parser = new CalParser(new java.io.FileInputStream(args[0]));
@@ -41,7 +41,7 @@ public class CalParser {
 				System.out.println(e.getMessage());
 				System.out.println("CAL Parser: Encountered errors during parse.");
 
-			}
+		}
 	}
 }
 PARSER_END(CalParser)
@@ -215,7 +215,7 @@ void statement() : {}
 	| <SSKIP> <SEMIC>
 }
 
-//Check brackets above
+//Expression > Fragment > Expression.
 void expression() : {}
 {
 	  fragment() binary_arith_op() fragment()
@@ -239,6 +239,7 @@ void fragment() : {}
 	| expression()
 }
 
+//Condition > Condition? 
 void condition() : {}
 {
 	  <NOT> condition()
