@@ -33,13 +33,13 @@ public class CalParser {
 			System.out.println("		java CalParser inputfile");
 			return;
 		}
-		
+	
 		try {
 			parser.Prog();
 			System.out.println("CAL Parser: CAL program parsed successfully");
 			}catch (ParseException e) {
-				System.out.println(e.getMessage());
-				System.out.println("CAL Parser: Encountered errors during parse.");
+			System.out.println(e.getMessage());
+			System.out.println("CAL Parser: Encountered errors during parse.");
 
 		}
 	}
@@ -47,8 +47,8 @@ public class CalParser {
 PARSER_END(CalParser)
 
 /*****************************************
- ***** SECTION 3 - TOKEN DEFINITIONS *****
- *****************************************/
+***** SECTION 3 - TOKEN DEFINITIONS *****
+*****************************************/
 
 TOKEN_MGR_DECLS:
 {
@@ -66,7 +66,7 @@ SKIP : /*** Ignoring spaces/tabs/newlines ***/
 
 SKIP : /* Comments */
 {
-	"/*" { commentNesting ++;} : IN_COMMENT
+	  "/*" { commentNesting ++;} : IN_COMMENT
 	| <"//" ([" "-"~"])* ("\n" | "\r" | "\r\n") >
 }
 
@@ -74,9 +74,9 @@ SKIP : /* Comments */
 {
 	  "/*" { commentNesting++; }
 	| "*/" { commentNesting --;
-			 if (commentNesting == 0)
-					SwitchTo(DEFAULT);
-			}
+		 if (commentNesting == 0)
+				SwitchTo(DEFAULT);
+		}
 	| <~[]>
 }
 
@@ -121,8 +121,8 @@ TOKEN : /*Keywords and Punctuation */
 	|< IDENTIFIER: <LETTER> (<LETTER> | <NUMBER> | "_")* >
 	|< #DIGIT: ["0" - "9"]>
 	|< NUMBER: ("-" ["1" - "9"] (<DIGIT>)*)
-			   |( ["1" - "9"] (<DIGIT>)* ) 
-			   | "0">	
+		   |( ["1" - "9"] (<DIGIT>)* ) 
+		   | "0">	
 	|< Other : ~[]>
 }
 
@@ -155,7 +155,7 @@ void var_decl() : {}
 
 void const_decl() : {}
 {
-	<CONS> <IDENTIFIER> <COLON> <ASSIGN> expression()
+	<CONS> <IDENTIFIER> <COLON> type() <ASSIGN> expression()
 }
 
 void function_list() : {}
@@ -168,8 +168,8 @@ void function() : {}
 	type() <IDENTIFIER> <LB>(parameter_list())<RB> <IS>
 	(decl_list())
 	<BEGIN>
-	(statement_block())
-	<RET> <LB>expression() | {} <RB>  //Is this an error or java issue?
+	statement_block()
+	<RET> <LB> (expression() | {}) <RB> <SEMIC> //Is this an error or java issue?
 	<END>
 }
 
@@ -181,14 +181,14 @@ void type() : {}
 //replace nemp_param_list 
 void parameter_list() : {}
 {
-	 <IDENTIFIER><COLON>type() (<COMMA> <IDENTIFIER><COLON>type())* | {}
+	<IDENTIFIER><COLON>type() (<COMMA> <IDENTIFIER><COLON>type())* | {}
 }
 
 /*Conflict between one or more param
 void nemp_parameter_list() : {}
 {
-    It is a parameter followed by 1 or 0 empty lists.
-	<IDENTIFIER><COLON>type() (<COMMA> nemp_parameter_list())*
+It is a parameter followed by 1 or 0 empty lists.
+<IDENTIFIER><COLON>type() (<COMMA> nemp_parameter_list())*
 }
 */
 
@@ -225,21 +225,24 @@ void statement_beta() : {}
 //Left hand recursion: Expression > Fragment > Expression.
 void expression() : {}
 {
-	expression_beta() (binary_arith_op() expression_beta())*  
+	expression_beta() (binary_arith_op() expression_beta())* 
 }
 
 //Separate out original Expression
 void expression_beta() : {}
 {
-	(LOOKAHEAD(2)
-	//replace fragment completely.
-	 (<MINUS>)? <IDENTIFIER>
-	| <NUMBER>
+
+	//replace fragment completely.	
+	LOOKAHEAD(2)
+	  <IDENTIFIER> <LB> arg_list() <RB>
+	| ((<MINUS>)? <IDENTIFIER>)
+	| <NUMBER> 
 	| <TRUE>
 	| <FALSE>
 	// remainder of original expression()
 	| <LB> expression() <RB>
-	| <IDENTIFIER> <LB> arg_list() <RB>)
+	//This is causing choice conflict, needs lookahead
+	//| <IDENTIFIER> <LB> arg_list() <RB>
 }
 
 void binary_arith_op() : {}

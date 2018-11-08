@@ -5,7 +5,7 @@ begin
   // figure out sign of result and convert args to absolute values
   if ( x < 0 & y >= 0)
   begin
-    minus_sign = true;
+    minus_sign := true;
     x := -x;
   end
   else
@@ -55,7 +55,7 @@ begin
   variable arg_1:integer;
   variable arg_2:integer;
   variable result:integer;
-  const five:integer := 5;
+  constant five:integer := 5;
   arg_1 := -6;
   arg_2 := five;
   result := multiply ( arg_1, arg_2 );
