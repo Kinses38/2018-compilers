@@ -67,6 +67,7 @@ SKIP : /*** Ignoring spaces/tabs/newlines ***/
 SKIP : /* Comments */
 {
 	"/*" { commentNesting ++;} : IN_COMMENT
+	| <"//" ([" "-"~"])* ("\n" | "\r" | "\r\n") >
 }
 
 <IN_COMMENT> SKIP :
@@ -122,8 +123,7 @@ TOKEN : /*Keywords and Punctuation */
 	|< NUMBER: ("-" ["1" - "9"] (<DIGIT>)*)
 			   |( ["1" - "9"] (<DIGIT>)* ) 
 			   | "0">	
-
-    |<OTHER : ~[]>
+	|< Other : ~[]>
 }
 
 
@@ -135,8 +135,8 @@ void Prog() : {}
 {
 	decl_list() 
 	function_list() 
-	main() 
-	<EOF>
+	main()
+	<EOF> 
 }
 
 void decl_list() : {}
@@ -198,8 +198,7 @@ void main() : {}
 	<MAIN>
 	<BEGIN>
 	decl_list()
-	statement_block()
-	<END>
+	statement_block()	
 }
 
 void statement_block() : {}
