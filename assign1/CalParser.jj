@@ -4,7 +4,10 @@
 
 options { JAVA_UNICODE_ESCAPE = true; 
 		  IGNORE_CASE = true;
-		  DEBUG_TOKEN_MANAGER= false;}
+		  DEBUG_TOKEN_MANAGER= false;
+		  DEBUG_PARSER = false;
+		  DEBUG_LOOKAHEAD = true;
+}
 /*********************************
  ***** SECTION 2 - USER CODE *****
  *********************************/
@@ -235,12 +238,11 @@ void expression_beta() : {}
 	//replace fragment completely.	
 	LOOKAHEAD(2)
 	  <IDENTIFIER> <LB> arg_list() <RB>
+//	| <LB> expression() <RB>
 	| ((<MINUS>)? <IDENTIFIER>)
 	| <NUMBER> 
 	| <TRUE>
 	| <FALSE>
-	// remainder of original expression()
-	| <LB> expression() <RB>
 	//This is causing choice conflict, needs lookahead
 	//| <IDENTIFIER> <LB> arg_list() <RB>
 }
@@ -265,7 +267,7 @@ void binary_arith_op() : {}
 //Left hand recursion: Condition > Condition 
 void condition() : {}
 {
-	  condition_beta() ((<AND> | <OR>) condition_beta())*
+	  condition_beta() (LOOKAHEAD(2) (<AND> | <OR>) condition_beta())*
 }
 
 void condition_beta() : {}
