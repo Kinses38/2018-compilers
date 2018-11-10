@@ -5,7 +5,7 @@
 options { JAVA_UNICODE_ESCAPE = true; 
 		  IGNORE_CASE = true;
 		  DEBUG_TOKEN_MANAGER= false;
-		  DEBUG_PARSER = false;
+		  DEBUG_PARSER = true;
 		  DEBUG_LOOKAHEAD = true;
 }
 /*********************************
@@ -172,7 +172,7 @@ void function() : {}
 	(decl_list())
 	<BEGIN>
 	statement_block()
-	<RET> <LB> (expression() | {}) <RB> <SEMIC> //Is this an error or java issue?
+	<RET> <LB> (expression() | {}) <RB> <SEMIC> 
 	<END>
 }
 
@@ -212,7 +212,7 @@ void statement_block() : {}
 void statement() : {}
 {
 	  <IDENTIFIER> statement_beta()
-	| <BEGIN> (statement_block()) <END>
+	| <BEGIN> statement_block() <END>
 	| <IF> condition() <BEGIN> statement_block() <END>
 	| <ELSE> <BEGIN> statement_block() <END>
 	| <WHILE> condition() <BEGIN> statement_block() <END>
@@ -234,17 +234,11 @@ void expression() : {}
 //Separate out original Expression
 void expression_beta() : {}
 {
-
-	//replace fragment completely.	
-	LOOKAHEAD(2)
-	  <IDENTIFIER> <LB> arg_list() <RB>
-//	| <LB> expression() <RB>
-	| ((<MINUS>)? <IDENTIFIER>)
+	  <IDENTIFIER> (<LB> arg_list() <RB>)?
+	| <MINUS> <IDENTIFIER>
 	| <NUMBER> 
 	| <TRUE>
 	| <FALSE>
-	//This is causing choice conflict, needs lookahead
-	//| <IDENTIFIER> <LB> arg_list() <RB>
 }
 
 void binary_arith_op() : {}
@@ -252,22 +246,10 @@ void binary_arith_op() : {}
 	<PLUS> | <MINUS>
 }
 
-/*Replaced by expression
-* void fragment() : {}
-* {
-* 	<IDENTIFIER>
-*	| <MINUS> <IDENTIFIER>
-*	| <NUMBER>
-*	| <TRUE>
-*	| <FALSE>
-*	| expression()
-* }
-*/
-
 //Left hand recursion: Condition > Condition 
 void condition() : {}
 {
-	  condition_beta() (LOOKAHEAD(2) (<AND> | <OR>) condition_beta())*
+	  condition_beta() ( (<AND> | <OR>) condition())?
 }
 
 void condition_beta() : {}
@@ -291,12 +273,5 @@ void comp_op() : {}
 //redefine using Kleene to avoid choice conflict
 void arg_list() : {}
 {
-	<IDENTIFIER> (<COMMA> <IDENTIFIER>)* | {}
+	(<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)*
 }
-
-/*
-void nemp_arg_list() : {}
-{
-	<IDENTIFIER> | <IDENTIFIER> <COMMA> nemp_arg_list()
-}
-*/
