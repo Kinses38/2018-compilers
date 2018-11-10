@@ -143,7 +143,7 @@ void Prog() : {}
 
 void decl_list() : {}
 {
-	(decl() <SEMIC> decl_list()| {} )
+	decl() <SEMIC> decl_list()| {} 
 }
 
 void decl() : {}
@@ -163,16 +163,16 @@ void const_decl() : {}
 
 void function_list() : {}
 {
-	(function() function_list() | {})
+	function() function_list() | {}
 }
 
 void function() : {}
 {
-	type() <IDENTIFIER> <LB>(parameter_list())<RB> <IS>
-	(decl_list())
+	type() <IDENTIFIER> <LB>parameter_list()<RB> <IS>
+	decl_list()
 	<BEGIN>
 	statement_block()
-	<RET> <LB> (expression() | {}) <RB> <SEMIC> //Is this an error or java issue?
+	<RET> <LB> (expression() | {}) <RB> <SEMIC>
 	<END>
 }
 
@@ -186,14 +186,6 @@ void parameter_list() : {}
 {
 	<IDENTIFIER><COLON>type() (<COMMA> <IDENTIFIER><COLON>type())* | {}
 }
-
-/*Conflict between one or more param
-void nemp_parameter_list() : {}
-{
-It is a parameter followed by 1 or 0 empty lists.
-<IDENTIFIER><COLON>type() (<COMMA> nemp_parameter_list())*
-}
-*/
 
 void main() : {}
 {
@@ -234,33 +226,17 @@ void expression() : {}
 //Separate out original Expression
 void expression_beta() : {}
 {
-
-	//replace fragment completely.	
 	  <IDENTIFIER> (<LB> arg_list() <RB>)?
 	| <MINUS> <IDENTIFIER>
 	| <NUMBER> 
 	| <TRUE>
 	| <FALSE>
-	//This is causing choice conflict, needs lookahead
-	//| <IDENTIFIER> <LB> arg_list() <RB>
 }
 
 void binary_arith_op() : {}
 {
 	<PLUS> | <MINUS>
 }
-
-/*Replaced by expression
-* void fragment() : {}
-* {
-* 	<IDENTIFIER>
-*	| <MINUS> <IDENTIFIER>
-*	| <NUMBER>
-*	| <TRUE>
-*	| <FALSE>
-*	| expression()
-* }
-*/
 
 //Left hand recursion: Condition > Condition 
 void condition() : {}
@@ -289,12 +265,6 @@ void comp_op() : {}
 //redefine using Kleene to avoid choice conflict
 void arg_list() : {}
 {
-	<IDENTIFIER> (<COMMA> <IDENTIFIER>)* | {}
+	(<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)
 }
 
-/*
-void nemp_arg_list() : {}
-{
-	<IDENTIFIER> | <IDENTIFIER> <COMMA> nemp_arg_list()
-}
-*/
