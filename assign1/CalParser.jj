@@ -5,7 +5,7 @@
 options { JAVA_UNICODE_ESCAPE = true; 
 		  IGNORE_CASE = true;
 		  DEBUG_TOKEN_MANAGER= false;
-		  DEBUG_PARSER = false;
+		  DEBUG_PARSER = true;
 		  DEBUG_LOOKAHEAD = true;
 }
 /*********************************
@@ -236,10 +236,8 @@ void expression_beta() : {}
 {
 
 	//replace fragment completely.	
-	LOOKAHEAD(2)
-	  <IDENTIFIER> <LB> arg_list() <RB>
-//	| <LB> expression() <RB>
-	| ((<MINUS>)? <IDENTIFIER>)
+	  <IDENTIFIER> (<LB> arg_list() <RB>)?
+	| <MINUS> <IDENTIFIER>
 	| <NUMBER> 
 	| <TRUE>
 	| <FALSE>
