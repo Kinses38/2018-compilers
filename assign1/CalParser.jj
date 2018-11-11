@@ -265,6 +265,6 @@ void comp_op() : {}
 //redefine using Kleene to avoid choice conflict
 void arg_list() : {}
 {
-	(<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)
+	(<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)?
 }
 
