@@ -3,7 +3,7 @@ integer multiply (x:integer, y:integer) is
   variable minus_sign : boolean;
 begin
   // figure out sign of result and convert args to absolute values
-  if ( x < -1 & y >= 0)
+  if ( x < -1 & y >= 0 & x < y)
   begin
     minus_sign := true;
     x := -x;

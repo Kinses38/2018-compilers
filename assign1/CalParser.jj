@@ -1,13 +1,13 @@
 /*******************************
  ***** SECTION 1 - OPTIONS *****
  *******************************/
+options { JAVA_UNICODE_ESCAPE = true;
+                   IGNORE_CASE = true;
+                   DEBUG_TOKEN_MANAGER= false;
+                   DEBUG_PARSER = false;
+                   DEBUG_LOOKAHEAD = false;
+ }
 
-options { JAVA_UNICODE_ESCAPE = true; 
-		  IGNORE_CASE = true;
-		  DEBUG_TOKEN_MANAGER= false;
-		  DEBUG_PARSER = false;
-		  DEBUG_LOOKAHEAD = false;
-}
 /*********************************
  ***** SECTION 2 - USER CODE *****
  *********************************/
@@ -36,13 +36,13 @@ public class CalParser {
 			System.out.println("		java CalParser inputfile");
 			return;
 		}
-	
+		
 		try {
 			parser.Prog();
 			System.out.println("CAL Parser: CAL program parsed successfully");
 			}catch (ParseException e) {
-			System.out.println(e.getMessage());
-			System.out.println("CAL Parser: Encountered errors during parse.");
+				System.out.println(e.getMessage());
+				System.out.println("CAL Parser: Encountered errors during parse.");
 
 		}
 	}
@@ -50,8 +50,8 @@ public class CalParser {
 PARSER_END(CalParser)
 
 /*****************************************
-***** SECTION 3 - TOKEN DEFINITIONS *****
-*****************************************/
+ ***** SECTION 3 - TOKEN DEFINITIONS *****
+ *****************************************/
 
 TOKEN_MGR_DECLS:
 {
@@ -70,17 +70,17 @@ SKIP : /*** Ignoring spaces/tabs/newlines ***/
 SKIP : /* Comments */
 {
 	  "/*" { commentNesting ++;} : IN_COMMENT
-	| <"//" ([" "-"~"])* ("\n" | "\r" | "\r\n") >
+	| <"//" (~["\n"])* "\n">
 }
 
-<IN_COMMENT> SKIP :
+<IN_COMMENT> SKIP : 
 {
-	  "/*" { commentNesting++; }
-	| "*/" { commentNesting --;
-		 if (commentNesting == 0)
-				SwitchTo(DEFAULT);
-		}
-	| <~[]>
+   "/*" { commentNesting++;}
+   | "*/" { commentNesting--;
+            if(commentNesting == 0)
+                SwitchTo(DEFAULT);
+            }
+   |<~[]>
 }
 
 TOKEN : /*Keywords and Punctuation */
@@ -124,9 +124,10 @@ TOKEN : /*Keywords and Punctuation */
 	|< IDENTIFIER: <LETTER> (<LETTER> | <NUMBER> | "_")* >
 	|< #DIGIT: ["0" - "9"]>
 	|< NUMBER: ("-" ["1" - "9"] (<DIGIT>)*)
-		   |( ["1" - "9"] (<DIGIT>)* ) 
-		   | "0">	
-	|< Other : ~[]>
+			   |( ["1" - "9"] (<DIGIT>)* ) 
+			   | "0">	
+
+    |<OTHER : ~[]>
 }
 
 
@@ -143,7 +144,7 @@ void Prog() : {}
 
 void decl_list() : {}
 {
-	decl() <SEMIC> decl_list()| {} 
+	(decl() <SEMIC> decl_list()) | {} 
 }
 
 void decl() : {}
@@ -168,7 +169,7 @@ void function_list() : {}
 
 void function() : {}
 {
-	type() <IDENTIFIER> <LB>parameter_list()<RB> <IS>
+	type() <IDENTIFIER> <LB> parameter_list()<RB> <IS>
 	decl_list()
 	<BEGIN>
 	statement_block()
@@ -181,10 +182,9 @@ void type() : {}
 	<INT> | <BOOL> | <VOID>
 }
 
-//replace nemp_param_list 
 void parameter_list() : {}
 {
-	<IDENTIFIER><COLON>type() (<COMMA> <IDENTIFIER><COLON>type())* | {}
+	<IDENTIFIER><COLON>type() (<COMMA> parameter_list())?| {}
 }
 
 void main() : {}
@@ -192,19 +192,19 @@ void main() : {}
 	<MAIN>
 	<BEGIN>
 	decl_list()
-	statement_block()	
+	statement_block()
+	<END>
 }
 
 void statement_block() : {}
 {
-	statement() statement_block() | {}
+	statement() statement_block()|{}
 }
 
-//Conflict between ID > Exp | ID > Arg_list
 void statement() : {}
 {
 	  <IDENTIFIER> statement_beta()
-	| <BEGIN> (statement_block()) <END>
+	| <BEGIN> statement_block() <END>
 	| <IF> condition() <BEGIN> statement_block() <END>
 	| <ELSE> <BEGIN> statement_block() <END>
 	| <WHILE> condition() <BEGIN> statement_block() <END>
@@ -217,20 +217,10 @@ void statement_beta() : {}
 	| <LB> arg_list() <RB> <SEMIC>
 }
 
-//Left hand recursion: Expression > Fragment > Expression.
+//Expression > Fragment > Expression.
 void expression() : {}
 {
-	fragment() (binary_arith_op() fragment())* 
-}
-
-//Separate out original Expression
-void fragment() : {}
-{
-	  <IDENTIFIER> (<LB> arg_list() <RB>)?
-	| <MINUS> <IDENTIFIER>
-	| <NUMBER> 
-	| <TRUE>
-	| <FALSE>
+	  fragment() (binary_arith_op() fragment())*
 }
 
 void binary_arith_op() : {}
@@ -238,15 +228,23 @@ void binary_arith_op() : {}
 	<PLUS> | <MINUS>
 }
 
-//Left hand recursion: Condition > Condition 
+void fragment() : {}
+{
+	  <IDENTIFIER> (<LB> arg_list() <RB>)?
+	| <MINUS> <IDENTIFIER>
+	| <NUMBER>
+	| <TRUE>
+	| <FALSE>
+}
+
+//Condition > Condition? 
 void condition() : {}
 {
-	  condition_beta() ((<AND> | <OR>) condition_beta()| {})
+	condition_beta() (LOOKAHEAD(2)(<OR> | <AND>) condition_beta())* 
 }
 
 void condition_beta() : {}
 {
-	//replace the easy condition rules.
 	  <NOT> condition()
 	| <LB> condition() <RB>
 	| expression() comp_op() expression()
@@ -262,9 +260,8 @@ void comp_op() : {}
 	| <GTE> 
 }
 
-//redefine using Kleene to avoid choice conflict
 void arg_list() : {}
 {
-	(<IDENTIFIER> (<COMMA> <IDENTIFIER>)*)?
+	((<IDENTIFIER> (<COMMA> <IDENTIFIER>)*))*
 }
 
