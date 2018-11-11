@@ -5,8 +5,8 @@
 options { JAVA_UNICODE_ESCAPE = true; 
 		  IGNORE_CASE = true;
 		  DEBUG_TOKEN_MANAGER= false;
-		  DEBUG_PARSER = true;
-		  DEBUG_LOOKAHEAD = true;
+		  DEBUG_PARSER = false;
+		  DEBUG_LOOKAHEAD = false;
 }
 /*********************************
  ***** SECTION 2 - USER CODE *****
@@ -220,11 +220,11 @@ void statement_beta() : {}
 //Left hand recursion: Expression > Fragment > Expression.
 void expression() : {}
 {
-	expression_beta() (binary_arith_op() expression_beta())* 
+	fragment() (binary_arith_op() fragment())* 
 }
 
 //Separate out original Expression
-void expression_beta() : {}
+void fragment() : {}
 {
 	  <IDENTIFIER> (<LB> arg_list() <RB>)?
 	| <MINUS> <IDENTIFIER>
@@ -241,7 +241,7 @@ void binary_arith_op() : {}
 //Left hand recursion: Condition > Condition 
 void condition() : {}
 {
-	  condition_beta() (LOOKAHEAD(2) (<AND> | <OR>) condition_beta())*
+	  condition_beta() ((<AND> | <OR>) condition_beta()| {})
 }
 
 void condition_beta() : {}

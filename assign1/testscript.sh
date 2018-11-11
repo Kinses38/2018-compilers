@@ -1,1 +1,3 @@
-javacc CalParser.jj && javac CalParser.java
+for filename in ../test/*.cal; do
+	java CalParser $filename
+done
