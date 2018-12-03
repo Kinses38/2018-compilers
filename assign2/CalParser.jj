@@ -1,0 +1,267 @@
+/*******************************
+ ***** SECTION 1 - OPTIONS *****
+ *******************************/
+options { JAVA_UNICODE_ESCAPE = true;
+                   IGNORE_CASE = true;
+                   DEBUG_TOKEN_MANAGER= false;
+                   DEBUG_PARSER = false;
+                   DEBUG_LOOKAHEAD = false;
+ }
+
+/*********************************
+ ***** SECTION 2 - USER CODE *****
+ *********************************/
+
+PARSER_BEGIN(CalParser)
+public class CalParser {
+	public static void main(String args[]){
+		CalParser parser;
+		if (args.length == 0){
+			System.out.println("CAL parser: Reading from input: ");
+			parser = new CalParser(System.in);
+		} else if (args.length == 1) {
+			System.out.println("CAL Parser: Reading from file " + args[0] + "..");
+		
+		try {
+			parser = new CalParser(new java.io.FileInputStream(args[0]));
+		} catch (java.io.FileNotFoundException e) {
+			System.out.println("CAL Parser: File " + args[0] + "not found.");
+			return;
+			}
+		}
+		else {
+			System.out.println("CAL Parser: Usage is one of:");
+			System.out.println("		java CalParser < inputfile");
+			System.out.println("OR");
+			System.out.println("		java CalParser inputfile");
+			return;
+		}
+		
+		try {
+			parser.Prog();
+			System.out.println("CAL Parser: CAL program parsed successfully");
+			}catch (ParseException e) {
+				System.out.println(e.getMessage());
+				System.out.println("CAL Parser: Encountered errors during parse.");
+
+		}
+	}
+}
+PARSER_END(CalParser)
+
+/*****************************************
+ ***** SECTION 3 - TOKEN DEFINITIONS *****
+ *****************************************/
+
+TOKEN_MGR_DECLS:
+{
+	static int commentNesting = 0;
+}
+
+SKIP : /*** Ignoring spaces/tabs/newlines ***/
+{
+	  " "
+	| "\t"
+	| "\n"
+	| "\r"
+	| "\f"
+}
+
+SKIP : /* Comments */
+{
+	  "/*" { commentNesting ++;} : IN_COMMENT
+	| <"//" (~["\n"])* "\n">
+}
+
+<IN_COMMENT> SKIP : 
+{
+   "/*" { commentNesting++;}
+   | "*/" { commentNesting--;
+            if(commentNesting == 0)
+                SwitchTo(DEFAULT);
+            }
+   |<~[]>
+}
+
+TOKEN : /*Keywords and Punctuation */
+{
+	<COMMA : ",">
+	|<SEMIC : ";">
+	|<COLON : ":">
+	|<ASSIGN : ":=">
+	|<LB : "(">
+	|<RB : ")">
+	|<PLUS : "+">
+	|<MINUS : "-">
+	|<NOT : "~">
+	|<OR : "|">
+	|<AND : "&">
+	|<EQUAL : "=">
+	|<NEQ : "!=">
+	|<LT : "<">
+	|<LTE : "<=">
+	|<GT : ">">
+	|<GTE : ">=">
+
+	|<VAR : "variable">
+	|<CONS : "constant">
+	|<RET : "return">
+	|<INT : "integer">
+	|<BOOL : "boolean">
+	|<VOID : "void">
+	|<MAIN : "main">
+	|<IF : "if">
+	|<ELSE : "else">
+	|<TRUE : "true">
+	|<FALSE : "false">
+	|<WHILE : "while">
+	|<BEGIN : "begin">
+	|<END : "end">
+	|<IS : "is">
+	|<SSKIP : "skip">
+
+	|< #LETTER: (["a"-"z", "A"-"Z"])>
+	|< IDENTIFIER: <LETTER> (<LETTER> | <NUMBER> | "_")* >
+	|< #DIGIT: ["0" - "9"]>
+	|< NUMBER: ("-" ["1" - "9"] (<DIGIT>)*)
+			   |( ["1" - "9"] (<DIGIT>)* ) 
+			   | "0">	
+
+    |<OTHER : ~[]>
+}
+
+
+/***********************************
+***** SECTION 4 - THE GRAMMAR *****
+***********************************/
+
+void Prog() : {}
+{
+	decl_list() 
+	function_list() 
+	main() 
+}
+
+void decl_list() : {}
+{
+	(decl() <SEMIC> decl_list()) | {} 
+}
+
+void decl() : {}
+{
+	var_decl() | const_decl()
+}
+
+void var_decl() : {}
+{
+	<VAR> <IDENTIFIER> <COLON> type()
+}
+
+void const_decl() : {}
+{
+	<CONS> <IDENTIFIER> <COLON> type() <ASSIGN> expression()
+}
+
+void function_list() : {}
+{
+	function() function_list() | {}
+}
+
+void function() : {}
+{
+	type() <IDENTIFIER> <LB> parameter_list()<RB> <IS>
+	decl_list()
+	<BEGIN>
+	statement_block()
+	<RET> <LB> (expression() | {}) <RB> <SEMIC>
+	<END>
+}
+
+void type() : {}
+{
+	<INT> | <BOOL> | <VOID>
+}
+
+void parameter_list() : {}
+{
+	<IDENTIFIER><COLON>type() (<COMMA> parameter_list())?| {}
+}
+
+void main() : {}
+{
+	<MAIN>
+	<BEGIN>
+	decl_list()
+	statement_block()
+	<END>
+}
+
+void statement_block() : {}
+{
+	statement() statement_block()|{}
+}
+
+void statement() : {}
+{
+	  <IDENTIFIER> statement_beta()
+	| <BEGIN> statement_block() <END>
+	| <IF> condition() <BEGIN> statement_block() <END>
+	| <ELSE> <BEGIN> statement_block() <END>
+	| <WHILE> condition() <BEGIN> statement_block() <END>
+	| <SSKIP> <SEMIC>
+}
+
+void statement_beta() : {}
+{
+	  <ASSIGN> expression() <SEMIC>
+	| <LB> arg_list() <RB> <SEMIC>
+}
+
+//Expression > Fragment > Expression.
+void expression() : {}
+{
+	  fragment() (binary_arith_op() fragment())*
+}
+
+void binary_arith_op() : {}
+{
+	<PLUS> | <MINUS>
+}
+
+void fragment() : {}
+{
+	  <IDENTIFIER> (<LB> arg_list() <RB>)?
+	| <MINUS> <IDENTIFIER>
+	| <NUMBER>
+	| <TRUE>
+	| <FALSE>
+}
+
+//Condition > Condition? 
+void condition() : {}
+{
+	condition_beta() (LOOKAHEAD(2)(<OR> | <AND>) condition_beta())* 
+}
+
+void condition_beta() : {}
+{
+	  <NOT> condition()
+	| <LB> condition() <RB>
+	| expression() comp_op() expression()
+}
+
+void comp_op() : {}
+{
+	  <EQUAL> 
+	| <NEQ>
+	| <LT>
+	| <LTE>
+	| <GT>
+	| <GTE> 
+}
+
+void arg_list() : {}
+{
+	((<IDENTIFIER> (<COMMA> <IDENTIFIER>)*))*
+}
+
