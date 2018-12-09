@@ -3,12 +3,12 @@ integer test_fn (x:integer) is
 	variable i:integer;
 begin
 	i := 2;
-	return (x);
+    return();
 end
 
 main
 begin
 	variable i:integer;
-	i := 1;
+	i := (1 + 2) + 3;
 	i := test_fn (i);
 end
