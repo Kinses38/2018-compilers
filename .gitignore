@@ -1,3 +1,8 @@
 .idea/
 AST*
+./tar/
 *.class
+*.java
+!SymbolTable.java
+!MyVisitor.java
+!SimpleNode.java

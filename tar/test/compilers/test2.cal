@@ -1,0 +1,12 @@
+void func (x:integer, y:integer) is
+begin
+  return (i);
+end
+
+main
+begin
+
+  variable i:integer;
+  i := 1;
+  func (i, i);
+end	
