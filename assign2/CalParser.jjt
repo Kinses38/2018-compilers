@@ -1,0 +1,301 @@
+/*******************************
+ ***** SECTION 1 - OPTIONS *****
+ *******************************/
+options 
+{ 
+	JAVA_UNICODE_ESCAPE = true;
+    IGNORE_CASE = true;
+    DEBUG_TOKEN_MANAGER= false;
+    DEBUG_PARSER = true;
+    DEBUG_LOOKAHEAD = false;
+	VISITOR = true;
+	MULTI = true;
+ }
+
+/*********************************
+ ***** SECTION 2 - USER CODE *****
+ *********************************/
+PARSER_BEGIN(CalParser)
+import java.io.*;
+import java.util.*;
+
+public class CalParser {
+	public static void main(String args[]){
+		CalParser parser;
+		if (args.length == 0){
+			System.out.println("CAL parser: Reading from input: ");
+			parser = new CalParser(System.in);
+		} else if (args.length == 1) {
+			System.out.println("CAL Parser: Reading from file " + args[0] + "..");
+		
+		try {
+			parser = new CalParser(new FileInputStream(args[0]));
+		} catch (java.io.FileNotFoundException e) {
+			System.out.println("CAL Parser: File " + args[0] + "not found.");
+			return;
+			}
+		}
+		else {
+			System.out.println("CAL Parser: Usage is one of:");
+			System.out.println("		java CalParser < inputfile");
+			System.out.println("OR");
+			System.out.println("		java CalParser inputfile");
+			return;
+		}
+		
+		try {
+			//parser.Prog();
+			SimpleNode root = parser.Prog();
+
+			System.out.println("### AST ###");
+			root.dump(">");
+			System.out.println("### END AST");
+
+			System.out.println("CAL Parser: CAL program parsed successfully");
+			}catch (ParseException e) {
+				System.out.println(e.getMessage());
+				System.out.println("CAL Parser: Encountered errors during parse.");
+
+		}
+	}
+}
+PARSER_END(CalParser)
+
+/*****************************************
+ ***** SECTION 3 - TOKEN DEFINITIONS *****
+ *****************************************/
+
+TOKEN_MGR_DECLS:
+{
+	static int commentNesting = 0;
+}
+
+SKIP : /*** Ignoring spaces/tabs/newlines ***/
+{
+	  " "
+	| "\t"
+	| "\n"
+	| "\r"
+	| "\f"
+}
+
+SKIP : /* Comments */
+{
+	  "/*" { commentNesting ++;} : IN_COMMENT
+	| <"//" (~["\n"])* "\n">
+}
+
+<IN_COMMENT> SKIP : 
+{
+   "/*" { commentNesting++;}
+   | "*/" { commentNesting--;
+            if(commentNesting == 0)
+                SwitchTo(DEFAULT);
+            }
+   |<~[]>
+}
+
+TOKEN : /*Keywords and Punctuation */
+{
+	<COMMA : ",">
+	|<SEMIC : ";">
+	|<COLON : ":">
+	|<ASSIGN : ":=">
+	|<LB : "(">
+	|<RB : ")">
+	|<PLUS : "+">
+	|<MINUS : "-">
+	|<NOT : "~">
+	|<OR : "|">
+	|<AND : "&">
+	|<EQUAL : "=">
+	|<NEQ : "!=">
+	|<LT : "<">
+	|<LTE : "<=">
+	|<GT : ">">
+	|<GTE : ">=">
+
+	|<VAR : "variable">
+	|<CONS : "constant">
+	|<RET : "return">
+	|<INT : "integer">
+	|<BOOL : "boolean">
+	|<VOID : "void">
+	|<MAIN : "main">
+	|<IF : "if">
+	|<ELSE : "else">
+	|<TRUE : "true">
+	|<FALSE : "false">
+	|<WHILE : "while">
+	|<BEGIN : "begin">
+	|<END : "end">
+	|<IS : "is">
+	|<SSKIP : "skip">
+
+	|< #LETTER: (["a"-"z", "A"-"Z"])>
+	|< IDENTIFIER: <LETTER> (<LETTER> | <NUMBER> | "_")* >
+	|< #DIGIT: ["0" - "9"]>
+	|< NUMBER: ("-" ["1" - "9"] (<DIGIT>)*)
+			   |( ["1" - "9"] (<DIGIT>)* ) 
+			   | "0">	
+
+    |<OTHER : ~[]>
+}
+
+
+/***********************************
+***** SECTION 4 - THE GRAMMAR *****
+***********************************/
+
+SimpleNode Prog() : {}
+{
+	decl_list() 
+	function_list() 
+	main()
+	{return jjtThis;}
+}
+
+void decl_list() #void : {}
+{
+	(decl() <SEMIC> decl_list()) | {} 
+}
+
+void decl() #void : {}
+{
+	var_decl() | const_decl()
+}
+
+// Creating Identifier prod rule to return info based on ExprLang.jjt by David Sinclair
+void var_decl() #var_dec : {Token t;}
+{
+	t = <VAR> identifier() <COLON> type()
+}
+
+String identifier() #identifier : {Token t;}
+{
+    t = <IDENTIFIER> {jjtThis.value = t.image; return t.image;}
+}
+
+void const_decl() #const_dec : {Token t;}
+{
+	t = <CONS> identifier() <COLON> type() <ASSIGN> expression()
+    {jjtThis.value = t.image;}
+}
+
+void function_list() #void : {}
+{
+	function() function_list() | {}
+}
+
+void function() #function(>1) : {}
+{
+	type() identifier() <LB> parameter_list()<RB> <IS>
+	decl_list()
+	<BEGIN>
+	statement_block()
+	//ret type = func header type? Returning only one?
+	<RET> <LB> (expression() #ret(1)|{} #ret) <RB> <SEMIC>
+	<END>
+}
+
+String type() #type : {Token t;}
+{
+	(t = <INT> | t = <BOOL> | t =  <VOID>)
+	{jjtThis.value = t.image; return t.image;}
+}
+
+// rewrite "more parameters" to stop nesting of param list node
+
+void parameter_list() #parameter_list() : {}
+{
+	(identifier() <COLON>type() #parameter(2))
+	(<COMMA> identifier() <COLON> type() #parameter(2))*
+	| {}
+}
+
+void main() #main: {}
+{
+	<MAIN>
+	<BEGIN>
+	decl_list()
+	statement_block()
+	<END>
+}
+
+void statement_block() #void : {}
+{
+	statement() statement_block() | {}
+}
+
+void statement() #void: {Token t;}
+{
+	  identifier() statement_beta()
+	| <BEGIN> statement_block() <END>
+	| (t = <IF> condition() <BEGIN> statement_block() <END> {jjtThis.value = t.image;}#ifstate(3))
+	| (t = <ELSE> <BEGIN> statement_block() <END> {jjtThis.value = t.image;} #els(2))
+	| (t = <WHILE> condition() <BEGIN> statement_block() <END> {jjtThis.value = t.image;}#whil(2))
+	| <SSKIP> <SEMIC>
+}
+
+void statement_beta() #void : {Token t;}
+{
+	  (t = <ASSIGN> expression() <SEMIC> {jjtThis.value = t.image;} #assign(2))
+	| (t = <LB> arg_list() <RB> <SEMIC> {jjtThis.value = t.image;} #func_call(2))
+}
+
+//Expression > Fragment > Expression.
+void expression() #void : {}
+{
+	  fragment() (binary_arith_op())
+	  | (<LB> expression() <RB> binary_arith_op())
+}
+
+//rewrite bin op to allow children
+void binary_arith_op() #void : {Token t;}
+{
+	  ( (t = <PLUS> fragment() {jjtThis.value = t.image;} #plus(2))
+	  | (t = <MINUS> fragment() {jjtThis.value = t.image;} #minus(2)))*
+}
+
+void fragment() #void : {Token t;}
+{
+	  (t = <MINUS> identifier() {jjtThis.value = t.image;} #minus_identifier(1))
+	| (t = <NUMBER> {jjtThis.value = t.image;} #num)
+	| (t = <TRUE> {jjtThis.value = t.image;} #bool)
+	| (t = <FALSE> {jjtThis.value = t.image;} #bool)
+	|  identifier() (<LB> arg_list() <RB>)?
+}
+
+//Rewrite condition to make nodes?
+void condition() #void : {Token t;}
+{
+	 condition_beta()
+	 (LOOKAHEAD(2)  (t = <AND> condition_beta() {jjtThis.value = t.image;} #and(2)
+     |  t = <OR> condition_beta() {jjtThis.value = t.image;} #or(2)))*
+
+}
+
+//have to rewrite cond_beta to capture 2nd expression as child
+void condition_beta() #void : {Token t;}
+{
+	  (t = <NOT> condition() {jjtThis.value = t.image;} #not(1))
+	| LOOKAHEAD(3) <LB> condition() <RB>
+	//| expression() comp_op() expression()
+	| expression() comp_op()
+}
+
+void comp_op() #void : {}
+{
+	  <EQUAL> expression() #eq(2)
+	| <NEQ> expression()   #neq(2)
+	| <LT> expression()    #lt(2)
+	| <LTE> expression()   #lte(2)
+	| <GT> expression()    #gt(2)
+	| <GTE> expression()   #gte(2)
+}
+
+void arg_list() #arg_list : {}
+{
+	((identifier() (<COMMA> identifier())*))*
+}
+

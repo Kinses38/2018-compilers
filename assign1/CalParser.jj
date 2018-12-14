@@ -154,12 +154,12 @@ void decl() : {}
 
 void var_decl() : {}
 {
-	<VAR> <IDENTIFIER> <COLON> type()
+	<VAR> id() <COLON> type()
 }
 
 void const_decl() : {}
 {
-	<CONS> <IDENTIFIER> <COLON> type() <ASSIGN> expression()
+	<CONS> id() <COLON> type() <ASSIGN> expression()
 }
 
 void function_list() : {}
@@ -169,7 +169,7 @@ void function_list() : {}
 
 void function() : {}
 {
-	type() <IDENTIFIER> <LB> parameter_list()<RB> <IS>
+	type() id() <LB> parameter_list()<RB> <IS>
 	decl_list()
 	<BEGIN>
 	statement_block()
@@ -184,7 +184,7 @@ void type() : {}
 
 void parameter_list() : {}
 {
-	<IDENTIFIER><COLON>type() (<COMMA> parameter_list())?| {}
+	id()<COLON>type() (<COMMA> parameter_list())?| {}
 }
 
 void main() : {}
@@ -203,7 +203,7 @@ void statement_block() : {}
 
 void statement() : {}
 {
-	  <IDENTIFIER> statement_beta()
+	  id() statement_beta()
 	| <BEGIN> statement_block() <END>
 	| <IF> condition() <BEGIN> statement_block() <END>
 	| <ELSE> <BEGIN> statement_block() <END>
@@ -230,8 +230,8 @@ void binary_arith_op() : {}
 
 void fragment() : {}
 {
-	  <IDENTIFIER> (<LB> arg_list() <RB>)?
-	| <MINUS> <IDENTIFIER>
+	  id() (<LB> arg_list() <RB>)?
+	| <MINUS> id()
 	| <NUMBER>
 	| <TRUE>
 	| <FALSE>
@@ -262,6 +262,6 @@ void comp_op() : {}
 
 void arg_list() : {}
 {
-	((<IDENTIFIER> (<COMMA> <IDENTIFIER>)*))*
+	((id() (<COMMA> id())*))*
 }
 

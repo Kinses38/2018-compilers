@@ -1,9 +1,12 @@
-void func () is
+void func (x:integer, y:integer) is
 begin
-  return ();
+  return (i);
 end
 
 main
 begin
-  func ();
+
+  variable i:integer;
+  i := 1;
+  func (i, i);
 end	
