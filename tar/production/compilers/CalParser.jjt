@@ -20,6 +20,8 @@ import java.io.*;
 import java.util.*;
 
 public class CalParser {
+    static String scope;
+    static SymbolTable st;
 	public static void main(String args[]){
 		CalParser parser;
 		if (args.length == 0){
@@ -44,15 +46,19 @@ public class CalParser {
 		}
 		
 		try {
-			//parser.Prog();
+			st = new SymbolTable();
 			SimpleNode root = parser.Prog();
 
-			System.out.println("### AST ###");
-			root.dump("\t");
-			System.out.println("### END AST");
+			System.out.println("\n### AST ###");
+			root.dump("> ");
+			System.out.println("\n### END AST ###");
+
+
+            st.printSymbolTable();
 
             MyVisitor v = new MyVisitor();
-            root.jjtAccept(v,null);
+            root.jjtAccept(v, st);
+
 			System.out.println("CAL Parser: CAL program parsed successfully");
 			}catch (ParseException e) {
 				System.out.println(e.getMessage());
@@ -151,6 +157,8 @@ TOKEN : /*Keywords and Punctuation */
 
 SimpleNode Prog() : {}
 {
+    {scope = "global";}
+
 	decl_list() 
 	function_list() 
 	main()
@@ -168,9 +176,9 @@ void decl() #void : {}
 }
 
 // Creating Identifier prod rule to return info based on ExprLang.jjt by David Sinclair
-void var_decl() #var_dec : {Token t;}
+void var_decl() #var_dec : {Token t; String id; String type;}
 {
-	t = <VAR> identifier() <COLON> type()
+	t = <VAR> id = identifier() <COLON> type = type() {st.put(id, type, "var",  scope);}
 }
 
 String identifier() #identifier : {Token t;}
@@ -178,10 +186,13 @@ String identifier() #identifier : {Token t;}
     t = <IDENTIFIER> {jjtThis.value = t.image; return t.image;}
 }
 
-void const_decl() #const_dec : {Token t;}
+void const_decl() #const_dec : {Token t; String id; String type;}
 {
-	t = <CONS> identifier() <COLON> type() <ASSIGN> expression()
-    {jjtThis.value = t.image;}
+	t = <CONS>  id = identifier() <COLON> type = type() <ASSIGN> expression()
+    {
+        jjtThis.value = t.image;
+        st.put(id, type, "const", scope);
+    }
 }
 
 void function_list() #void : {}
@@ -189,15 +200,22 @@ void function_list() #void : {}
 	function() function_list() | {}
 }
 
-void function() #function(>1) : {}
+void function() #function : {String id; String type;}
 {
-	type() identifier() <LB> parameter_list()<RB> <IS>
+	type = type() id = identifier()
+	{
+            //function dec is global, then let parameters fall under func scope.
+            st.put(id, type, "function", scope);
+            scope = id;
+        }
+	<LB> parameter_list()<RB> <IS>
 	decl_list()
 	<BEGIN>
 	statement_block()
 	//ret type = func header type? Returning only one?
 	<RET> <LB> (expression() #ret(1)|{} #ret) <RB> <SEMIC>
 	<END>
+	{scope = "global";}
 }
 
 String type() #type : {Token t;}
@@ -208,15 +226,19 @@ String type() #type : {Token t;}
 
 // rewrite "more parameters" to stop nesting of param list node
 
-void parameter_list() #parameter_list() : {}
+void parameter_list() #parameter_list() : {String id; String type;}
 {
-	(identifier() <COLON>type() #parameter(2))
-	(<COMMA> identifier() <COLON> type() #parameter(2))*
+	(id = identifier() <COLON> type = type() #parameter(2))
+	{st.put(id, type, "parameter", scope);}
+	//rewrite to avoidi nested param list, need to push to st separately
+	(<COMMA> id = identifier() <COLON> type = type() #parameter(2))*
+	{st.put(id, type, "parameter", scope);}
 	| {}
 }
 
 void main() #main: {}
 {
+    {scope = "main";}
 	<MAIN>
 	<BEGIN>
 	decl_list()

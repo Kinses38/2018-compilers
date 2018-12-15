@@ -3,7 +3,9 @@ import java.io.*;
 import java.util.*;
 
 public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalParserConstants {/*@bgen(jjtree)*/
-  protected static JJTCalParserState jjtree = new JJTCalParserState();public static void main(String args[]){
+  protected static JJTCalParserState jjtree = new JJTCalParserState();static String scope;
+    static SymbolTable st;
+        public static void main(String args[]){
                 CalParser parser;
                 if (args.length == 0){
                         System.out.println("CAL parser: Reading from input: ");
@@ -27,15 +29,19 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
                 }
 
                 try {
-                        //parser.Prog();
+                        st = new SymbolTable();
                         SimpleNode root = parser.Prog();
 
-                        System.out.println("### AST ###");
-                        root.dump("\u005ct");
-                        System.out.println("### END AST");
+                        System.out.println("\u005cn### AST ###");
+                        root.dump("> ");
+                        System.out.println("\u005cn### END AST ###");
+
+
+            st.printSymbolTable();
 
             MyVisitor v = new MyVisitor();
-            root.jjtAccept(v,null);
+            root.jjtAccept(v, st);
+
                         System.out.println("CAL Parser: CAL program parsed successfully");
                         }catch (ParseException e) {
                                 System.out.println(e.getMessage());
@@ -53,6 +59,7 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
     try {
+     scope = "global";
       decl_list();
       function_list();
       main();
@@ -60,23 +67,23 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
           jjtc000 = false;
          {if (true) return jjtn000;}
     } catch (Throwable jjte000) {
-          if (jjtc000) {
-            jjtree.clearNodeScope(jjtn000);
-            jjtc000 = false;
-          } else {
-            jjtree.popNode();
-          }
-          if (jjte000 instanceof RuntimeException) {
-            {if (true) throw (RuntimeException)jjte000;}
-          }
-          if (jjte000 instanceof ParseException) {
-            {if (true) throw (ParseException)jjte000;}
-          }
-          {if (true) throw (Error)jjte000;}
+      if (jjtc000) {
+        jjtree.clearNodeScope(jjtn000);
+        jjtc000 = false;
+      } else {
+        jjtree.popNode();
+      }
+      if (jjte000 instanceof RuntimeException) {
+        {if (true) throw (RuntimeException)jjte000;}
+      }
+      if (jjte000 instanceof ParseException) {
+        {if (true) throw (ParseException)jjte000;}
+      }
+      {if (true) throw (Error)jjte000;}
     } finally {
-          if (jjtc000) {
-            jjtree.closeNodeScope(jjtn000, true);
-          }
+      if (jjtc000) {
+        jjtree.closeNodeScope(jjtn000, true);
+      }
     }
     throw new Error("Missing return statement in function");
   }
@@ -115,12 +122,15 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
                             /*@bgen(jjtree) var_dec */
                             ASTvar_dec jjtn000 = new ASTvar_dec(JJTVAR_DEC);
                             boolean jjtc000 = true;
-                            jjtree.openNodeScope(jjtn000);Token t;
+                            jjtree.openNodeScope(jjtn000);Token t; String id; String type;
     try {
       t = jj_consume_token(VAR);
-      identifier();
+      id = identifier();
       jj_consume_token(COLON);
-      type();
+      type = type();
+                                                            jjtree.closeNodeScope(jjtn000, true);
+                                                            jjtc000 = false;
+                                                           st.put(id, type, "var",  scope);
     } catch (Throwable jjte000) {
           if (jjtc000) {
             jjtree.clearNodeScope(jjtn000);
@@ -164,17 +174,18 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
                                 /*@bgen(jjtree) const_dec */
                                 ASTconst_dec jjtn000 = new ASTconst_dec(JJTCONST_DEC);
                                 boolean jjtc000 = true;
-                                jjtree.openNodeScope(jjtn000);Token t;
+                                jjtree.openNodeScope(jjtn000);Token t; String id; String type;
     try {
       t = jj_consume_token(CONS);
-      identifier();
+      id = identifier();
       jj_consume_token(COLON);
-      type();
+      type = type();
       jj_consume_token(ASSIGN);
       expression();
       jjtree.closeNodeScope(jjtn000, true);
       jjtc000 = false;
-     jjtn000.value = t.image;
+        jjtn000.value = t.image;
+        st.put(id, type, "const", scope);
     } catch (Throwable jjte000) {
           if (jjtc000) {
             jjtree.clearNodeScope(jjtn000);
@@ -211,13 +222,16 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
   }
 
   static final public void function() throws ParseException {
-                                 /*@bgen(jjtree) #function(> 1) */
-  ASTfunction jjtn000 = new ASTfunction(JJTFUNCTION);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
+                             /*@bgen(jjtree) function */
+                             ASTfunction jjtn000 = new ASTfunction(JJTFUNCTION);
+                             boolean jjtc000 = true;
+                             jjtree.openNodeScope(jjtn000);String id; String type;
     try {
-      type();
-      identifier();
+      type = type();
+      id = identifier();
+            //function dec is global, then let parameters fall under func scope.
+            st.put(id, type, "function", scope);
+            scope = id;
       jj_consume_token(LB);
       parameter_list();
       jj_consume_token(RB);
@@ -277,6 +291,9 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
       jj_consume_token(RB);
       jj_consume_token(SEMIC);
       jj_consume_token(END);
+          jjtree.closeNodeScope(jjtn000, true);
+          jjtc000 = false;
+         scope = "global";
     } catch (Throwable jjte000) {
           if (jjtc000) {
             jjtree.clearNodeScope(jjtn000);
@@ -293,7 +310,7 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
           {if (true) throw (Error)jjte000;}
     } finally {
           if (jjtc000) {
-            jjtree.closeNodeScope(jjtn000, jjtree.nodeArity() > 1);
+            jjtree.closeNodeScope(jjtn000, true);
           }
     }
   }
@@ -333,38 +350,39 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
 // rewrite "more parameters" to stop nesting of param list node
   static final public void parameter_list() throws ParseException {
                                            /*@bgen(jjtree) #parameter_list(true) */
-  ASTparameter_list jjtn000 = new ASTparameter_list(JJTPARAMETER_LIST);
-  boolean jjtc000 = true;
-  jjtree.openNodeScope(jjtn000);
+                                           ASTparameter_list jjtn000 = new ASTparameter_list(JJTPARAMETER_LIST);
+                                           boolean jjtc000 = true;
+                                           jjtree.openNodeScope(jjtn000);String id; String type;
     try {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case IDENTIFIER:
-        identifier();
+        id = identifier();
         jj_consume_token(COLON);
-                               ASTparameter jjtn001 = new ASTparameter(JJTPARAMETER);
-                               boolean jjtc001 = true;
-                               jjtree.openNodeScope(jjtn001);
+                                     ASTparameter jjtn001 = new ASTparameter(JJTPARAMETER);
+                                     boolean jjtc001 = true;
+                                     jjtree.openNodeScope(jjtn001);
         try {
-          type();
+          type = type();
         } catch (Throwable jjte001) {
-                               if (jjtc001) {
-                                 jjtree.clearNodeScope(jjtn001);
-                                 jjtc001 = false;
-                               } else {
-                                 jjtree.popNode();
-                               }
-                               if (jjte001 instanceof RuntimeException) {
-                                 {if (true) throw (RuntimeException)jjte001;}
-                               }
-                               if (jjte001 instanceof ParseException) {
-                                 {if (true) throw (ParseException)jjte001;}
-                               }
-                               {if (true) throw (Error)jjte001;}
+                                     if (jjtc001) {
+                                       jjtree.clearNodeScope(jjtn001);
+                                       jjtc001 = false;
+                                     } else {
+                                       jjtree.popNode();
+                                     }
+                                     if (jjte001 instanceof RuntimeException) {
+                                       {if (true) throw (RuntimeException)jjte001;}
+                                     }
+                                     if (jjte001 instanceof ParseException) {
+                                       {if (true) throw (ParseException)jjte001;}
+                                     }
+                                     {if (true) throw (Error)jjte001;}
         } finally {
-                               if (jjtc001) {
-                                 jjtree.closeNodeScope(jjtn001,  2);
-                               }
+                                     if (jjtc001) {
+                                       jjtree.closeNodeScope(jjtn001,  2);
+                                     }
         }
+         st.put(id, type, "parameter", scope);
         label_1:
         while (true) {
           switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -376,33 +394,36 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
             break label_1;
           }
           jj_consume_token(COMMA);
-          identifier();
+          id = identifier();
           jj_consume_token(COLON);
-                                        ASTparameter jjtn002 = new ASTparameter(JJTPARAMETER);
-                                        boolean jjtc002 = true;
-                                        jjtree.openNodeScope(jjtn002);
+                                             ASTparameter jjtn002 = new ASTparameter(JJTPARAMETER);
+                                             boolean jjtc002 = true;
+                                             jjtree.openNodeScope(jjtn002);
           try {
-            type();
+            type = type();
           } catch (Throwable jjte002) {
-                                        if (jjtc002) {
-                                          jjtree.clearNodeScope(jjtn002);
-                                          jjtc002 = false;
-                                        } else {
-                                          jjtree.popNode();
-                                        }
-                                        if (jjte002 instanceof RuntimeException) {
-                                          {if (true) throw (RuntimeException)jjte002;}
-                                        }
-                                        if (jjte002 instanceof ParseException) {
-                                          {if (true) throw (ParseException)jjte002;}
-                                        }
-                                        {if (true) throw (Error)jjte002;}
+                                             if (jjtc002) {
+                                               jjtree.clearNodeScope(jjtn002);
+                                               jjtc002 = false;
+                                             } else {
+                                               jjtree.popNode();
+                                             }
+                                             if (jjte002 instanceof RuntimeException) {
+                                               {if (true) throw (RuntimeException)jjte002;}
+                                             }
+                                             if (jjte002 instanceof ParseException) {
+                                               {if (true) throw (ParseException)jjte002;}
+                                             }
+                                             {if (true) throw (Error)jjte002;}
           } finally {
-                                        if (jjtc002) {
-                                          jjtree.closeNodeScope(jjtn002,  2);
-                                        }
+                                             if (jjtc002) {
+                                               jjtree.closeNodeScope(jjtn002,  2);
+                                             }
           }
         }
+          jjtree.closeNodeScope(jjtn000, true);
+          jjtc000 = false;
+         st.put(id, type, "parameter", scope);
         break;
       default:
         jj_la1[6] = jj_gen;
@@ -437,29 +458,30 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
   boolean jjtc000 = true;
   jjtree.openNodeScope(jjtn000);
     try {
+     scope = "main";
       jj_consume_token(MAIN);
       jj_consume_token(BEGIN);
       decl_list();
       statement_block();
       jj_consume_token(END);
     } catch (Throwable jjte000) {
-          if (jjtc000) {
-            jjtree.clearNodeScope(jjtn000);
-            jjtc000 = false;
-          } else {
-            jjtree.popNode();
-          }
-          if (jjte000 instanceof RuntimeException) {
-            {if (true) throw (RuntimeException)jjte000;}
-          }
-          if (jjte000 instanceof ParseException) {
-            {if (true) throw (ParseException)jjte000;}
-          }
-          {if (true) throw (Error)jjte000;}
+      if (jjtc000) {
+        jjtree.clearNodeScope(jjtn000);
+        jjtc000 = false;
+      } else {
+        jjtree.popNode();
+      }
+      if (jjte000 instanceof RuntimeException) {
+        {if (true) throw (RuntimeException)jjte000;}
+      }
+      if (jjte000 instanceof ParseException) {
+        {if (true) throw (ParseException)jjte000;}
+      }
+      {if (true) throw (Error)jjte000;}
     } finally {
-          if (jjtc000) {
-            jjtree.closeNodeScope(jjtn000, true);
-          }
+      if (jjtc000) {
+        jjtree.closeNodeScope(jjtn000, true);
+      }
     }
   }
 
@@ -1102,115 +1124,6 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
     finally { jj_save(1, xla); }
   }
 
-  static private boolean jj_3R_28() {
-    if (jj_3R_30()) return true;
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_31()) jj_scanpos = xsp;
-    return false;
-  }
-
-  static private boolean jj_3R_27() {
-    if (jj_scan_token(FALSE)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_30() {
-    if (jj_scan_token(IDENTIFIER)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_26() {
-    if (jj_scan_token(TRUE)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_25() {
-    if (jj_scan_token(NUMBER)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_24() {
-    if (jj_scan_token(MINUS)) return true;
-    if (jj_3R_30()) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_22() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_24()) {
-    jj_scanpos = xsp;
-    if (jj_3R_25()) {
-    jj_scanpos = xsp;
-    if (jj_3R_26()) {
-    jj_scanpos = xsp;
-    if (jj_3R_27()) {
-    jj_scanpos = xsp;
-    if (jj_3R_28()) return true;
-    }
-    }
-    }
-    }
-    return false;
-  }
-
-  static private boolean jj_3R_33() {
-    if (jj_scan_token(MINUS)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_32() {
-    if (jj_scan_token(PLUS)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_29() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_32()) {
-    jj_scanpos = xsp;
-    if (jj_3R_33()) return true;
-    }
-    return false;
-  }
-
-  static private boolean jj_3R_23() {
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_29()) { jj_scanpos = xsp; break; }
-    }
-    return false;
-  }
-
-  static private boolean jj_3R_15() {
-    if (jj_scan_token(LB)) return true;
-    if (jj_3R_12()) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_12() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_14()) {
-    jj_scanpos = xsp;
-    if (jj_3R_15()) return true;
-    }
-    return false;
-  }
-
-  static private boolean jj_3R_14() {
-    if (jj_3R_22()) return true;
-    if (jj_3R_23()) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_21() {
-    if (jj_scan_token(GTE)) return true;
-    return false;
-  }
-
   static private boolean jj_3R_20() {
     if (jj_scan_token(GT)) return true;
     return false;
@@ -1318,6 +1231,115 @@ public class CalParser/*@bgen(jjtree)*/implements CalParserTreeConstants, CalPar
 
   static private boolean jj_3R_8() {
     if (jj_3R_9()) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_28() {
+    if (jj_3R_30()) return true;
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_31()) jj_scanpos = xsp;
+    return false;
+  }
+
+  static private boolean jj_3R_27() {
+    if (jj_scan_token(FALSE)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_26() {
+    if (jj_scan_token(TRUE)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_25() {
+    if (jj_scan_token(NUMBER)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_24() {
+    if (jj_scan_token(MINUS)) return true;
+    if (jj_3R_30()) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_22() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_24()) {
+    jj_scanpos = xsp;
+    if (jj_3R_25()) {
+    jj_scanpos = xsp;
+    if (jj_3R_26()) {
+    jj_scanpos = xsp;
+    if (jj_3R_27()) {
+    jj_scanpos = xsp;
+    if (jj_3R_28()) return true;
+    }
+    }
+    }
+    }
+    return false;
+  }
+
+  static private boolean jj_3R_33() {
+    if (jj_scan_token(MINUS)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_32() {
+    if (jj_scan_token(PLUS)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_29() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_32()) {
+    jj_scanpos = xsp;
+    if (jj_3R_33()) return true;
+    }
+    return false;
+  }
+
+  static private boolean jj_3R_23() {
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_29()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  static private boolean jj_3R_15() {
+    if (jj_scan_token(LB)) return true;
+    if (jj_3R_12()) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_30() {
+    if (jj_scan_token(IDENTIFIER)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_12() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_14()) {
+    jj_scanpos = xsp;
+    if (jj_3R_15()) return true;
+    }
+    return false;
+  }
+
+  static private boolean jj_3R_14() {
+    if (jj_3R_22()) return true;
+    if (jj_3R_23()) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_21() {
+    if (jj_scan_token(GTE)) return true;
     return false;
   }
 

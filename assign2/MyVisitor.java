@@ -10,7 +10,7 @@ class MyVisitor implements CalParserVisitor
     public Object visit(ASTProg node, Object data)
     {
         symbol_table = (SymbolTable)data;
-        //symbol_table.printSymbolTable();
+
         //visit all the nodes
         node.childrenAccept(this, data);
         return null;
@@ -30,12 +30,13 @@ class MyVisitor implements CalParserVisitor
 
     public Object visit(ASTconst_dec node, Object data)
     {
-        node.childrenAccept(this, data);
+
         return data;
     }
 
     public Object visit(ASTfunction node, Object data)
     {
+        SimpleNode id = (SimpleNode) node.jjtGetChild(1);
         node.childrenAccept(this, data);
         return data;
     }

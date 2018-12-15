@@ -1,12 +1,30 @@
-void func (x:integer, y:integer) is
+void max_of (x:integer, y:integer) is
+    variable max:integer;
 begin
-  return (i);
+    if(x > y)
+        begin
+            max := x;
+        end
+    else
+        begin
+            max := y;
+        end
+    return (max);
+end
+
+integer last_func () is
+    variable works:boolean;
+begin
+    works := true;
+    return(works);
 end
 
 main
 begin
-
+  constant five:integer := 5;
   variable i:integer;
+
   i := 1;
-  func (i, i);
+  func (five, i);
+  i := 2;
 end	
