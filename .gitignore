@@ -1,6 +1,6 @@
 .idea/
 AST*
-.tar/*
+tar/
 *.class
 *.java
 !SymbolTable.java
