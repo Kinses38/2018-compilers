@@ -16,16 +16,16 @@ class SymbolTable
 
     void put(String id, String type, String symbol_type, String scope)
     {
-        LinkedList<String> scope_values = scopes_table.get(scope);
-        if(scope_values == null)
+        LinkedList<String> values_in_scope = scopes_table.get(scope);
+        if(values_in_scope == null)
         {
-            scope_values = new LinkedList<>();
-            scope_values.add(id);
-            scopes_table.put(scope, scope_values);
+            values_in_scope = new LinkedList<>();
+            values_in_scope.add(id);
+            scopes_table.put(scope, values_in_scope);
         }
         else
         {
-            scope_values.add(id);
+            values_in_scope.add(id);
         }
         Symbol current_sym = new Symbol(type, symbol_type);
         symbols.put(id+scope, current_sym);
