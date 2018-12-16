@@ -1,4 +1,5 @@
-void max_of (x:integer, y:integer) is
+
+void max_of (x:integer, y:integer, z:integer, a:integer) is
     variable max:integer;
 begin
     if(x > y)
@@ -9,11 +10,11 @@ begin
         begin
             max := y;
         end
-    return (max);
+    return( );
 end
 
 integer last_func () is
-    variable works:boolean;
+    variable works:integer;
 begin
     works := true;
     return(works);

@@ -10,6 +10,7 @@ options
     DEBUG_LOOKAHEAD = false;
 	VISITOR = true;
 	MULTI = true;
+	NODE_PREFIX = "";
  }
 
 /*********************************
@@ -176,17 +177,17 @@ void decl() #void : {}
 }
 
 // Creating Identifier prod rule to return info based on ExprLang.jjt by David Sinclair
-void var_decl() #var_dec : {Token t; String id; String type;}
+void var_decl() #Var_dec : {Token t; String id; String type;}
 {
 	t = <VAR> id = identifier() <COLON> type = type() {st.put(id, type, "var",  scope);}
 }
 
-String identifier() #identifier : {Token t;}
+String identifier() #Identifier : {Token t;}
 {
     t = <IDENTIFIER> {jjtThis.value = t.image; return t.image;}
 }
 
-void const_decl() #const_dec : {Token t; String id; String type;}
+void const_decl() #Const_dec : {Token t; String id; String type;}
 {
 	t = <CONS>  id = identifier() <COLON> type = type() <ASSIGN> expression()
     {
@@ -200,43 +201,45 @@ void function_list() #void : {}
 	function() function_list() | {}
 }
 
-void function() #function : {String id; String type;}
+void function() #Function : {String id; String type;}
 {
 	type = type() id = identifier()
 	{
             //function dec is global, then let parameters fall under func scope.
             st.put(id, type, "function", scope);
             scope = id;
-        }
+    }
 	<LB> parameter_list()<RB> <IS>
 	decl_list()
 	<BEGIN>
 	statement_block()
 	//ret type = func header type? Returning only one?
-	<RET> <LB> (expression() #ret(1)|{} #ret) <RB> <SEMIC>
+	<RET> <LB> (expression() #Ret(1)|{} #Ret) <RB> <SEMIC>
 	<END>
 	{scope = "global";}
 }
 
-String type() #type : {Token t;}
+String type() #Type : {Token t;}
 {
 	(t = <INT> | t = <BOOL> | t =  <VOID>)
 	{jjtThis.value = t.image; return t.image;}
 }
 
 // rewrite "more parameters" to stop nesting of param list node
-
-void parameter_list() #parameter_list() : {String id; String type;}
+void parameter_list() #void  : {}
 {
-	(id = identifier() <COLON> type = type() #parameter(2))
-	{st.put(id, type, "parameter", scope);}
-	//rewrite to avoidi nested param list, need to push to st separately
-	(<COMMA> id = identifier() <COLON> type = type() #parameter(2))*
-	{st.put(id, type, "parameter", scope);}
-	| {}
+        parameter()  (LOOKAHEAD(2)   <COMMA> parameter_list())?
+    | {}
 }
 
-void main() #main: {}
+void parameter() #void() : {String id; String type;}
+{
+	(id = identifier() <COLON> type = type() #Parameter(2))
+	{st.put(id, type, "parameter", scope);}
+
+}
+
+void main() #Main: {}
 {
     {scope = "main";}
 	<MAIN>
@@ -255,16 +258,16 @@ void statement() #void: {Token t;}
 {
 	  identifier() statement_beta()
 	| <BEGIN> statement_block() <END>
-	| (t = <IF> condition() <BEGIN> statement_block() <END> {jjtThis.value = t.image;}#ifstate(3))
-	| (t = <ELSE> <BEGIN> statement_block() <END> {jjtThis.value = t.image;} #els(2))
-	| (t = <WHILE> condition() <BEGIN> statement_block() <END> {jjtThis.value = t.image;}#whil(2))
+	| (t = <IF> condition() <BEGIN> statement_block() <END> {jjtThis.value = t.image;}#Ifstate(2))
+	| (t = <ELSE> <BEGIN> statement_block() <END> {jjtThis.value = t.image;} #Els(1))
+	| (t = <WHILE> condition() <BEGIN> statement_block() <END> {jjtThis.value = t.image;}#Whil(2))
 	| <SSKIP> <SEMIC>
 }
 
 void statement_beta() #void : {Token t;}
 {
-	  (t = <ASSIGN> expression() <SEMIC> {jjtThis.value = t.image;} #assign(2))
-	| (t = <LB> arg_list() <RB> <SEMIC> {jjtThis.value = t.image;} #func_call(2))
+	  (t = <ASSIGN> expression() <SEMIC> {jjtThis.value = t.image;} #Assign(2))
+	| (t = <LB> arg_list() <RB> <SEMIC> {jjtThis.value = t.image;} #Func_call(2))
 }
 
 //Expression > Fragment > Expression.
@@ -277,16 +280,16 @@ void expression() #void : {}
 //rewrite bin op to allow children
 void binary_arith_op() #void : {Token t;}
 {
-	  ( (t = <PLUS> fragment() {jjtThis.value = t.image;} #plus(2))
-	  | (t = <MINUS> fragment() {jjtThis.value = t.image;} #minus(2)))*
+	  ( (t = <PLUS> fragment() {jjtThis.value = t.image;} #Plus(2))
+	  | (t = <MINUS> fragment() {jjtThis.value = t.image;} #Minus(2)))*
 }
 
 void fragment() #void : {Token t;}
 {
-	  (t = <MINUS> identifier() {jjtThis.value = t.image;} #minus_identifier(1))
-	| (t = <NUMBER> {jjtThis.value = t.image;} #num)
-	| (t = <TRUE> {jjtThis.value = t.image;} #bool)
-	| (t = <FALSE> {jjtThis.value = t.image;} #bool)
+	  (t = <MINUS> identifier() {jjtThis.value = t.image;} #Minus_identifier(1))
+	| (t = <NUMBER> {jjtThis.value = t.image;} #Num)
+	| (t = <TRUE> {jjtThis.value = t.image;} #Bool)
+	| (t = <FALSE> {jjtThis.value = t.image;} #Bool)
 	|  identifier() (<LB> arg_list() <RB>)?
 }
 
@@ -294,15 +297,15 @@ void fragment() #void : {Token t;}
 void condition() #void : {Token t;}
 {
 	 condition_beta()
-	 (LOOKAHEAD(2)  (t = <AND> condition_beta() {jjtThis.value = t.image;} #and(2)
-     |  t = <OR> condition_beta() {jjtThis.value = t.image;} #or(2)))*
+	 (LOOKAHEAD(2)  (t = <AND> condition_beta() {jjtThis.value = t.image;} #And(2)
+     |  t = <OR> condition_beta() {jjtThis.value = t.image;} #Or(2)))*
 
 }
 
 //have to rewrite cond_beta to capture 2nd expression as child
 void condition_beta() #void : {Token t;}
 {
-	  (t = <NOT> condition() {jjtThis.value = t.image;} #not(1))
+	  (t = <NOT> condition() {jjtThis.value = t.image;} #Not(1))
 	| LOOKAHEAD(3) <LB> condition() <RB>
 	//| expression() comp_op() expression()
 	| expression() comp_op()
@@ -310,15 +313,15 @@ void condition_beta() #void : {Token t;}
 
 void comp_op() #void : {}
 {
-	  <EQUAL> expression() #eq(2)
-	| <NEQ> expression()   #neq(2)
-	| <LT> expression()    #lt(2)
-	| <LTE> expression()   #lte(2)
-	| <GT> expression()    #gt(2)
-	| <GTE> expression()   #gte(2)
+	  <EQUAL> expression() #Eq(2)
+	| <NEQ> expression()   #Neq(2)
+	| <LT> expression()    #Lt(2)
+	| <LTE> expression()   #Lte(2)
+	| <GT> expression()    #Gt(2)
+	| <GTE> expression()   #Gte(2)
 }
 
-void arg_list() #arg_list : {}
+void arg_list() #Arg_list : {}
 {
 	((identifier() (<COMMA> identifier())*))*
 }

@@ -1,14 +1,33 @@
+integer test_fn (a:integer, b:integer, c:integer) is
 variable i:integer;
-integer test_fn (x:integer) is
-	variable i:integer;
 begin
 	i := 2;
+    return(i);
+end
+
+void not_called () is
+begin
     return();
+end
+
+void return_wrong_type () is
+variable wrong_type:integer;
+begin
+    return(wrong_type);
 end
 
 main
 begin
-	variable i:integer;
-	i := (1 + 2) + 3;
-	i := test_fn (i);
+    variable e:boolean;
+    variable d: integer;
+    variable f:integer;
+    variable f:integer;
+    constant five:integer := 5;
+    e := 2;
+    d := 4;
+    test_fn(d, e ,f);
+    e :=  e + false;
+    return_wrong_type(d);
+    not_declared();
+
 end
