@@ -121,14 +121,7 @@ class MyVisitor implements CalParserVisitor
         else
             return DataType.TypeUnknown;
     }
-
-    public Object visit(Parameter_list node, Object data)
-    {
-        //Correct number of children?
-        node.childrenAccept(this, data);
-        return data;
-    }
-
+    
     public Object visit(Parameter node, Object data)
     {
         //parameters type match the given children??
