@@ -20,7 +20,7 @@ class Symbol
         return this.type;
     }
 
-    String getSymbol_type()
+    String getSymbolType()
     {
         return this.symbol_type;
     }
