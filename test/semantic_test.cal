@@ -1,8 +1,8 @@
 integer test_fn (a:integer, b:integer, c:integer) is
-variable i:integer;
+
 begin
 	i := 2;
-    return(i);
+    return();
 end
 
 void not_called () is
@@ -10,10 +10,9 @@ begin
     return();
 end
 
-void return_wrong_type () is
-variable wrong_type:integer;
+void type_and_number(a:integer, notabool:boolean) is
 begin
-    return(wrong_type);
+    return();
 end
 
 main
@@ -22,12 +21,13 @@ begin
     variable d: integer;
     variable f:integer;
     variable f:integer;
+    variable i:integer;
     constant five:integer := 5;
     e := 2;
     d := 4;
     test_fn(d, e ,f);
     e :=  e + false;
-    return_wrong_type(d);
     not_declared();
+    type_and_number();
 
 end

@@ -333,7 +333,6 @@ void function()           : {/*@bgen(jjtree) Function */
 	decl_list()
 	<BEGIN>
 	statement_block()
-	//ret type = func header type? Returning only one?
 	<RET> <LB> (/*@bgen(jjtree) #Ret( 1) */
                     {
                       Ret jjtn001 = new Ret(JJTRET);

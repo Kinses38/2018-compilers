@@ -29,6 +29,8 @@ class MyVisitor implements CalParserVisitor
      *   Parameters only used once. DONE.
      *   LHS = RHS var? DONE.
      *   Correct param types for func? DONE.
+     *
+     *
      *   Arith Op operators var or const?
      *   Bool op check
      *   var written to and read from
@@ -299,12 +301,14 @@ class MyVisitor implements CalParserVisitor
 
         if(node.children != null)
         {
+            ArrayList <Symbol>func_param_list = new ArrayList<>();
             Node arg_list [] = node.children;
             //get function name
             String func_name = (String) ((SimpleNode)node.parent.jjtGetChild(0)).jjtGetValue();
             //retrieve all parameters in func name scope from symbol table.
-            ArrayList func_param_list = symbol_table.getFuncParameters(func_name);
-            //hereshaun
+            if(declared_functions.contains(func_name))
+                func_param_list = symbol_table.getFuncParameters(func_name);
+
             if(!func_param_list.isEmpty())
             {
                 for (Node current_arg : arg_list)
@@ -344,7 +348,7 @@ class MyVisitor implements CalParserVisitor
             }
             else {
 
-                used_before_declare.add(parameter_name + " not declared before use");
+                used_before_declare.add(parameter_name + " not declared in scope: " +  current_scope + " or Global before use");
                 return false;
             }
         }
@@ -439,6 +443,7 @@ class MyVisitor implements CalParserVisitor
             System.out.println("No duplicate declarations of variables, consts, and functions");
         if(!wrong_number_of_param.isEmpty())
             wrong_number_of_param.forEach(System.out::println);
+        else
             System.out.println("All functions called with correct number of args");
         if(!wrong_method_signature.isEmpty())
             wrong_method_signature.forEach(System.out::println);

@@ -213,7 +213,6 @@ void function() #Function : {String id; String type;}
 	decl_list()
 	<BEGIN>
 	statement_block()
-	//ret type = func header type? Returning only one?
 	<RET> <LB> (expression() #Ret(1)|{} #Ret) <RB> <SEMIC>
 	<END>
 	{scope = "global";}
